@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BIOT – Breath analysis</title>
+<script>document.documentElement.classList.add("js")</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#050607; --panel:#0d1012; --line:#1b2024; --text:#f3f5f6; --muted:#98a2a8;
+    --teal:#22d3c5; --green:#34e08a; --warn:#f5a524; --red:#f0575b;
+    color-scheme: dark;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; scroll-padding-top:70px; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:Inter, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; line-height:1.5; }
+  a { color:inherit; text-decoration:none; }
+  :focus-visible { outline:2px solid var(--teal); outline-offset:3px; border-radius:6px; }
+  button { font:inherit; color:inherit; cursor:pointer; }
+  .grad { background:linear-gradient(90deg,var(--teal),var(--green)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  /* ---------- nav ---------- */
+  nav { position:fixed; inset:0 0 auto 0; z-index:20; height:60px; display:flex; align-items:center; justify-content:space-between;
+        padding:0 max(20px, calc((100vw - 1100px)/2)); background:rgba(5,6,7,.72); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
+  .logo { display:flex; align-items:center; gap:8px; font-weight:800; letter-spacing:.02em; }
+  .nav-links { display:flex; gap:32px; font-size:14px; }
+  .nav-links a { color:#dfe4e6; } .nav-links a:hover { color:var(--teal); }
+  .avatar { width:40px; height:40px; border-radius:50%; border:1px solid var(--line); background:#0b0e10; display:grid; place-items:center; }
+  .avatar:hover { border-color:var(--teal); }
+  #profile { position:fixed; top:66px; right:max(16px, calc((100vw - 1100px)/2)); width:300px; z-index:21; background:var(--panel); border:1px solid var(--line);
+             border-radius:14px; padding:16px; display:none; }
+  #profile.open { display:block; }
+  #profile label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  input, select { width:100%; background:#080a0b; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:9px 11px; font:inherit; font-size:14px; }
+
+  /* ---------- hero ---------- */
+  .hero { position:relative; min-height:100vh; display:grid; place-items:center; text-align:center; padding:100px 20px 60px; overflow:hidden; }
+  .bg { position:absolute; inset:0; z-index:0; filter:blur(48px) saturate(1.2); opacity:.55; }
+  .bg i { position:absolute; border-radius:50%; }
+  .bg i:nth-child(1) { width:46vmax; height:20vmax; left:-8%; top:12%; background:radial-gradient(closest-side,#0e7c75,transparent); animation:drift1 22s ease-in-out infinite alternate; }
+  .bg i:nth-child(2) { width:38vmax; height:16vmax; right:-6%; top:30%; background:radial-gradient(closest-side,#14a06a,transparent); animation:drift2 26s ease-in-out infinite alternate; }
+  .bg i:nth-child(3) { width:30vmax; height:30vmax; left:30%; bottom:-18%; background:radial-gradient(closest-side,#1d3f46,transparent); animation:drift1 30s ease-in-out infinite alternate-reverse; }
+  @keyframes drift1 { to { transform:translate(8vw,-6vh) rotate(18deg); } }
+  @keyframes drift2 { to { transform:translate(-9vw,5vh) rotate(-14deg); } }
+  .hero::after { content:""; position:absolute; inset:0; z-index:1; background:linear-gradient(180deg,rgba(5,6,7,.15),rgba(5,6,7,.55) 70%,var(--bg)); }
+  .hero-in { position:relative; z-index:2; max-width:900px; }
+  h1 { font-size:clamp(44px,8.5vw,92px); line-height:1.02; letter-spacing:-.035em; margin:0 0 22px; font-weight:800; }
+  .sub { color:#b4bdc2; font-size:clamp(16px,2vw,19px); max-width:560px; margin:0 auto 34px; }
+  .btns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .btn { padding:13px 26px; border-radius:999px; border:1px solid #2a3136; background:rgba(8,10,11,.6); font-weight:600; font-size:15px; }
+  .btn.solid { background:#fff; color:#050607; border-color:#fff; }
+  .btn:hover { border-color:var(--teal); }
+  .btn.solid:hover { background:#e6fffb; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+
+  /* ---------- sections ---------- */
+  section { padding:84px max(20px, calc((100vw - 1100px)/2)); }
+  h2 { font-size:clamp(28px,4vw,42px); letter-spacing:-.025em; margin:0 0 12px; line-height:1.1; }
+  .lead { color:var(--muted); max-width:620px; margin:0 0 44px; }
+  .feat { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:0; border-top:1px solid var(--line); }
+  .feat div { padding:26px 24px 26px 0; border-bottom:1px solid var(--line); }
+  .feat h3 { margin:0 0 6px; font-size:17px; } .feat p { margin:0; color:var(--muted); font-size:15px; }
+
+  .notice { border:1px solid #4a3a14; background:#17120a; color:#f0d9a0; border-radius:12px; padding:12px 16px; font-size:14px; margin-bottom:26px; }
+
+  /* ---------- test ---------- */
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:22px; }
+  .chip { padding:6px 12px; border-radius:999px; border:1px solid var(--line); font-size:13px; color:var(--muted); display:inline-flex; gap:8px; align-items:center; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#4b555b; } .chip.on .dot { background:var(--green); box-shadow:0 0 10px var(--green); }
+  .grid { display:grid; grid-template-columns:minmax(300px,380px) 1fr; gap:22px; }
+  @media (max-width:860px) { .grid { grid-template-columns:1fr; } .nav-links { display:none; } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:22px; }
+  .ringwrap { display:grid; place-items:center; position:relative; margin:4px 0 14px; }
+  .ring { width:190px; height:190px; transform:rotate(-90deg); }
+  .ring circle { fill:none; stroke-width:7; }
+  .ring .track { stroke:#161b1e; } .ring .prog { stroke:url(#rg); stroke-linecap:round; stroke-dasharray:408; stroke-dashoffset:408; transition:stroke-dashoffset .12s linear; }
+  .ringtxt { position:absolute; text-align:center; } .ringtxt b { display:block; font-size:22px; } .ringtxt span { font-size:13px; color:var(--muted); display:block; max-width:130px; margin:2px auto 0; }
+  .res { border:1px solid var(--line); border-radius:14px; padding:16px; text-align:center; transition:border-color .3s; }
+  .res.green { border-color:var(--green); } .res.yellow { border-color:var(--warn); } .res.red { border-color:var(--red); }
+  .res .t { font-size:20px; font-weight:700; margin:2px 0; }
+  .res.green .t { color:var(--green); } .res.yellow .t { color:var(--warn); } .res.red .t { color:var(--red); }
+  .res small { color:var(--muted); }
+  .meter { position:relative; height:8px; border-radius:99px; margin:14px 0 4px; background:linear-gradient(90deg,var(--green) 0 35%,var(--warn) 35% 65%,var(--red) 65% 100%); opacity:.85; }
+  .meter i { position:absolute; top:-5px; width:3px; height:18px; background:#fff; border-radius:2px; left:0; transition:left .4s; display:none; }
+  .charts { display:grid; gap:14px; }
+  .charts label { font-size:13px; color:var(--muted); display:flex; justify-content:space-between; }
+  canvas { width:100%; height:88px; display:block; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  table { width:100%; border-collapse:collapse; font-size:14px; margin-top:12px; } th,td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); } th { color:var(--muted); font-weight:500; }
+  .tag { padding:2px 9px; border-radius:99px; font-size:12px; border:1px solid currentColor; }
+  .tag.green { color:var(--green); } .tag.yellow { color:var(--warn); } .tag.red { color:var(--red); }
+
+  /* ---------- faq ---------- */
+  details { border-bottom:1px solid var(--line); padding:18px 0; max-width:780px; }
+  summary { cursor:pointer; font-weight:600; font-size:17px; list-style:none; display:flex; justify-content:space-between; gap:20px; }
+  summary::-webkit-details-marker { display:none; } summary::after { content:"+"; color:var(--teal); font-size:22px; line-height:1; } details[open] summary::after { content:"–"; }
+  details p { color:var(--muted); margin:10px 0 0; max-width:660px; }
+  footer { padding:30px 20px 50px; text-align:center; color:#5d686e; font-size:13px; }
+  @media (prefers-reduced-motion:reduce) { .bg i { animation:none; } html { scroll-behavior:auto; } .ring .prog, .meter i { transition:none; } }
+
+  /* ===================== 3D theme (matches the reference design) ===================== */
+  body { font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,sans-serif; -webkit-font-smoothing:antialiased; }
+  nav { display:grid; grid-template-columns:1fr auto 1fr; height:62px; padding:0 max(20px, calc((100vw - 1180px)/2)); background:rgba(3,4,5,.82); border-bottom:1px solid rgba(255,255,255,.07); }
+  .nav-links { justify-self:center; gap:38px; font-size:14px; font-weight:500; }
+  .nav-links a { color:#fff; transition:color .2s; }
+  .avatar { justify-self:end; background:#07090a; border-color:rgba(255,255,255,.12); }
+  .hero { background:#030405; }
+  #gl { position:absolute; inset:0; width:100%; height:100%; z-index:0; display:block; }
+  .hero.gl-on .bg { display:none; }
+  .hero::after { background:radial-gradient(52% 40% at 50% 47%,rgba(3,4,5,.66),transparent 72%),linear-gradient(180deg,rgba(3,4,5,.55) 0,transparent 20%,transparent 68%,var(--bg) 100%); }
+  .hero-in { max-width:1000px; transform:translate3d(var(--px,0px),var(--py,0px),0); transition:transform .25s ease-out; }
+  h1 { font-size:clamp(44px,7.4vw,118px); letter-spacing:-.04em; filter:drop-shadow(0 6px 34px rgba(0,0,0,.55)); }
+  .sub { color:#a9afb4; max-width:760px; font-size:clamp(15px,1.45vw,20px); }
+  html.js .hero-in h1, html.js .hero-in .sub, html.js .hero-in .btns { animation:rise 1s cubic-bezier(.2,.7,.2,1) both; }
+  html.js .hero-in .sub { animation-delay:.12s; } html.js .hero-in .btns { animation-delay:.24s; }
+  @keyframes rise { from { opacity:0; transform:translateY(34px); } }
+  .btn { transition:border-color .2s, transform .2s, background .2s; }
+  .btn:hover { transform:translateY(-2px); }
+
+  section { perspective:1400px; }
+  .feat { border-top:0; gap:18px; }
+  .feat div { border:1px solid var(--line); border-radius:18px; padding:26px 24px;
+              background:linear-gradient(160deg,rgba(34,211,197,.08),rgba(13,16,18,.85) 55%); box-shadow:0 18px 44px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06); }
+  .feat div:hover { border-color:rgba(34,211,197,.5); }
+  .feat div:hover { transform-style:preserve-3d; } .feat div:hover h3, .feat div:hover p { transform:translateZ(26px); }
+  .panel:hover { transform-style:preserve-3d; }
+  .panel { background:linear-gradient(180deg,#10151a,#0b0e10); box-shadow:0 26px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05); }
+  .panel:hover .ringwrap { transform:translateZ(30px); }
+
+  html.js .rv { opacity:0; translate:0 34px; rotate:x 14deg; will-change:transform,opacity;
+                transition:opacity .8s ease var(--d,0s), translate .8s cubic-bezier(.2,.7,.2,1) var(--d,0s), rotate .8s cubic-bezier(.2,.7,.2,1) var(--d,0s), transform .25s ease-out, border-color .25s; }
+  html.js .rv.in { opacity:1; translate:0 0; rotate:x 0deg; }
+  @media (max-width:860px) { nav { grid-template-columns:1fr auto; } }
+  .ext { display:inline-block; margin-top:6px; color:var(--muted); font-size:13px; } .ext:hover { color:var(--teal); }
+  @media (prefers-reduced-motion:reduce) { html.js .rv { opacity:1; translate:none; rotate:none; transition:none; } html.js .hero-in * { animation:none !important; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#home" aria-label="BIOT home">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="url(#lg)" stroke-width="2.2" stroke-linecap="round"><defs><linearGradient id="lg"><stop offset="0" stop-color="#22d3c5"/><stop offset="1" stop-color="#34e08a"/></linearGradient></defs><path d="M3 8h11a3 3 0 1 0-3-3M3 13h16a3 3 0 1 1-3 3M3 18h7"/></svg>
+    BIOT
+  </a>
+  <div class="nav-links"><a href="#home">Home</a><a href="#features">Features</a><a href="risk_final_v4.html">Start Test</a><a href="#faq">FAQ</a></div>
+  <button class="avatar" id="btnProfile" aria-label="Session details" aria-expanded="false">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dfe4e6" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3.2"/><path d="M5.8 18.2c1.6-2.4 3.6-3.4 6.2-3.4s4.6 1 6.2 3.4"/></svg>
+  </button>
+</nav>
+
+<div id="profile" role="dialog" aria-label="Session details">
+  <b>Session details</b>
+  <label for="subject">Subject ID</label><input id="subject" value="S001">
+  <label for="label">Sample type</label>
+  <select id="label"><option value="0">Reference (label 0)</option><option value="1">Target / proxy (label 1)</option></select>
+  <label for="cond">Condition</label><input id="cond" value="unspecified" placeholder="fasting, after meal, mouthwash…">
+  <label for="modelFile">Load model.json</label><input type="file" id="modelFile" accept=".json">
+</div>
+
+<header class="hero" id="home">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div class="bg" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="hero-in">
+    <h1>Breath Analysis.<br><span class="grad">Redefined.</span></h1>
+    <p class="sub">AI-powered breath diagnostics. Instant insights, clinical precision.</p>
+    <div class="btns">
+      <a class="btn solid" href="risk_final_v4.html">Start Testing</a>
+      <button class="btn" id="btnWatch">Watch Demo ▸</button>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <h2>From one exhale to a result</h2>
+  <p class="lead">The mask samples your breath, measures gas and humidity, and compares the pattern with a trained model.</p>
+  <div class="feat">
+    <div><h3>Breath sampling</h3><p>A pressure sensor detects the exhale and starts a controlled capture.</p></div>
+    <div><h3>Sensor array</h3><p>ENS160 air-quality (TVOC, eCO₂) plus BME280 humidity and temperature, corrected against a clean-air baseline.</p></div>
+    <div><h3>On-device features</h3><p>The ESP32 turns each exhale into 16 features before sending it over Bluetooth.</p></div>
+    <div><h3>AI scoring</h3><p>The model returns a 0–1 pattern score and a green, yellow or red band.</p></div>
+  </div>
+</section>
+
+<section id="test">
+  <h2>Start a test</h2>
+  <p class="lead">Connect the mask over Bluetooth, or run the demo without hardware. Then press Start test and exhale steadily.</p>
+  <div class="notice">Research prototype, not a medical device. The result only says whether a breath pattern is inside or outside the model’s reference range. See a doctor for any health concern.<span id="synthWarn"></span></div>
+
+  <div class="bar">
+    <button class="btn solid" id="btnConnect">Connect mask</button>
+    <button class="btn" id="btnDemo">Demo mode</button>
+    <button class="btn" id="btnTrig" disabled>Start test</button>
+    <select id="simClass" style="width:auto" aria-label="Simulated sample type"><option value="0">Simulated: reference-like</option><option value="1">Simulated: altered-like</option></select>
+    <span class="chip" id="status"><span class="dot"></span><span id="statusTxt">Not connected</span></span>
+    <a class="ext" href="risk_final_v4.html">Lung risk demo ↗</a>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="ringwrap">
+        <svg class="ring" viewBox="0 0 150 150" aria-hidden="true"><defs><linearGradient id="rg"><stop offset="0" stop-color="#22d3c5"/><stop offset="1" stop-color="#34e08a"/></linearGradient></defs>
+          <circle class="track" cx="75" cy="75" r="65"/><circle class="prog" id="prog" cx="75" cy="75" r="65"/></svg>
+        <div class="ringtxt" aria-live="polite"><b id="stName">Idle</b><span id="stHint">Connect the mask or start the demo</span></div>
+      </div>
+      <div class="res" id="res">
+        <small id="resMsg">No sample yet</small>
+        <div class="t" id="resT">–</div>
+        <div class="meter"><i id="marker"></i></div>
+        <small id="resScore"></small>
+      </div>
+      <div class="row" style="margin-top:14px"><button class="btn" id="btnPrint" style="flex:1">Print report</button><button class="btn" id="btnCsv" style="flex:1">Export CSV</button></div>
+    </div>
+
+    <div class="panel charts">
+      <div><label><span>TVOC (ENS160)</span><span id="v_tvoc">–</span></label><canvas id="c_tvoc"></canvas></div>
+      <div><label><span>eCO₂ estimate (ENS160)</span><span id="v_eco2">–</span></label><canvas id="c_eco2"></canvas></div>
+      <div><label><span>Breath humidity (BME280)</span><span id="v_rh">–</span></label><canvas id="c_rh"></canvas></div>
+      <div><label><span>Breath temperature (BME280)</span><span id="v_temp">–</span></label><canvas id="c_temp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:22px">
+    <b>Test history</b>
+    <div class="row" style="margin:12px 0 4px">
+      <button class="btn" id="btnTrain">Train model from my recordings</button>
+      <label class="btn" style="cursor:pointer">Import CSV<input type="file" id="csvIn" accept=".csv" hidden></label>
+      <button class="btn" id="btnSaveModel">Download model.json</button>
+      <span class="chip" id="cnt">Device recordings: 0 reference · 0 target</span>
+    </div>
+    <p style="margin:6px 0 0;color:var(--muted);font-size:14px" id="trainOut">Record real exhales with the mask, then train. Demo-mode samples are never used for training.</p>
+    <table><thead><tr><th>#</th><th>Time</th><th>Score</th><th>Band</th><th>Subject · type · condition</th></tr></thead><tbody id="hist"></tbody></table>
+    <p class="lead" id="histEmpty" style="margin:14px 0 0">Results appear here after each exhale.</p>
+  </div>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <p class="lead">Short answers about what this prototype can and can’t do.</p>
+  <details><summary>Does BIOT diagnose cancer?</summary><p>No. It scores a breath pattern against a model’s reference range. It is a research prototype, and any concern needs a doctor and clinical tests.</p></details>
+  <details><summary>How accurate is it?</summary><p>That depends on the data the model was trained on. If the page says the model is synthetic, the score only demonstrates the pipeline and has no clinical meaning.</p></details>
+  <details><summary>What can change my result?</summary><p>Food, drink, smoking, mouthwash, perfume and humidity all affect breath sensors. Record these conditions with each test.</p></details>
+  <details><summary>How do I run a test?</summary><p>Wait until the ring says Ready, press Start test, then exhale steadily for about 8 seconds. The mask purges before the next test.</p></details>
+  <details><summary>Does it work on iPhone?</summary><p>Not yet. Bluetooth in the browser needs Chrome or Edge on Windows, Mac, Linux or Android. Demo mode works everywhere.</p></details>
+</section>
+<footer>BIOT research prototype · not for diagnosis · <a href="risk_final_v4.html" style="text-decoration:underline">Lung risk demo</a></footer>
+
+<script>
+const SVC="6e400001-b5a3-f393-e0a9-e50e24dcca9e", RX="6e400002-b5a3-f393-e0a9-e50e24dcca9e", TX="6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+const ST=[["Calibrating","Breathe away from the mask"],["Ready","Put the mask to your face and exhale steadily"],["Capturing","Keep exhaling"],["Purging","Remove the mask; sensors are recovering"],["Warming up","Sensors stabilising (about 3 min)"]];
+const DUR={0:8000,2:10000,3:30000,4:180000}, CIRC=408;
+const $=id=>document.getElementById(id);
+let model=null, rxChar=null, device=null, demoTimer=null, rbuf="", history=[], curState=-1, stateT=0;
+const N=300, series={tvoc:[],eco2:[],rh:[],temp:[]};
+const BAND={green:"Within reference range",yellow:"Borderline: retest in a few days",red:"Outside reference range: see a doctor"};
+
+/* ---------- nav / profile ---------- */
+$("btnProfile").onclick=()=>{ const o=$("profile").classList.toggle("open"); $("btnProfile").setAttribute("aria-expanded",o); };
+document.addEventListener("click",e=>{ if(!e.target.closest("#profile,#btnProfile")) $("profile").classList.remove("open"); });
+
+/* ---------- model ---------- */
+async function loadModel(){ try{ model=await (await fetch("model.json")).json(); }catch(e){ model=null; } showModel(); }
+function showModel(){ $("synthWarn").innerHTML = !model ? " <b>No model loaded:</b> serve this folder with <code>python -m http.server</code> or choose model.json under the profile icon."
+  : model.synthetic ? " <b>The loaded model was trained on synthetic data</b>, so scores demonstrate the pipeline only." : ""; }
+$("modelFile").onchange=e=>{ const f=e.target.files[0]; if(f) f.text().then(t=>{ model=JSON.parse(t); showModel(); }); };
+function infer(x){ if(!model||x.length!==model.coef.length) return null; let z=model.intercept;
+  for(let i=0;i<x.length;i++) z+=model.coef[i]*(x[i]-model.mean[i])/model.scale[i]; return 1/(1+Math.exp(-z)); }
+const band=p=>p<model.bands.low?"green":p<model.bands.high?"yellow":"red";
+
+/* ---------- protocol ---------- */
+function onChunk(t){ rbuf+=t; let i; while((i=rbuf.indexOf("\n"))>=0){ const l=rbuf.slice(0,i).trim(); rbuf=rbuf.slice(i+1); if(l) parseLine(l); } }
+function parseLine(line){
+  const p=line.split(",");
+  if(p[0]==="L"){
+    const v={tvoc:+p[2],eco2:+p[3],rh:+p[4],temp:+p[5]};
+    for(const k in v){ series[k].push(v[k]); if(series[k].length>N) series[k].shift(); }
+    $("v_tvoc").textContent=v.tvoc.toFixed(0)+" ppb"; $("v_eco2").textContent=v.eco2.toFixed(0)+" ppm"; $("v_rh").textContent=v.rh.toFixed(1)+" %"; $("v_temp").textContent=v.temp.toFixed(1)+" °C";
+    setState(+p[6]); drawAll();
+  } else if(p[0]==="F"){ const f=p.slice(1).map(Number); addResult(f,infer(f)); }
+  else if(p[0]==="E"){ $("resMsg").textContent=p.slice(1).join(","); }
+}
+function setState(s){
+  if(s!==curState){ curState=s; stateT=performance.now(); $("stName").textContent=ST[s]?ST[s][0]:"–"; $("stHint").textContent=ST[s]?ST[s][1]:""; }
+  const d=DUR[s]; $("prog").style.strokeDashoffset = d ? CIRC*(1-Math.min((performance.now()-stateT)/d,1)) : (s===1?0:CIRC);
+}
+function resetRing(txt,hint){ curState=-1; $("prog").style.strokeDashoffset=CIRC; $("stName").textContent=txt; $("stHint").textContent=hint; }
+function addResult(f,pr){
+  history.push({t:new Date(),f,p:pr,subject:$("subject").value,label:$("label").value,cond:$("cond").value,src:demoTimer?"demo":"device"});
+  const el=$("res");
+  if(pr===null){ el.className="res"; $("resT").textContent="No model loaded"; $("resScore").textContent=""; $("marker").style.display="none"; }
+  else { const b=band(pr); el.className="res "+b; $("resMsg").textContent="Latest sample"; $("resT").textContent=BAND[b];
+         $("resScore").textContent="Pattern score "+pr.toFixed(2)+" (0 to 1)"; const m=$("marker"); m.style.display="block"; m.style.left="calc("+(pr*100)+"% - 1px)"; }
+  renderHist();
+}
+function renderHist(){
+  $("histEmpty").style.display=history.length?"none":"block";
+  $("hist").innerHTML=history.map((r,i)=>{ const b=r.p==null?null:band(r.p);
+    return `<tr><td>${i+1}</td><td>${r.t.toLocaleTimeString()}</td><td>${r.p==null?"–":r.p.toFixed(2)}</td><td>${b?`<span class="tag ${b}">${b}</span>`:"–"}</td><td>${r.subject} · ${r.label} · ${r.cond} · ${r.src}</td></tr>`; }).reverse().join("");
+  const d=history.filter(r=>r.src!=="demo"); $("cnt").textContent="Real recordings: "+d.filter(r=>+r.label===0).length+" reference · "+d.filter(r=>+r.label===1).length+" target";
+}
+
+/* ---------- charts ---------- */
+const COL={tvoc:"#22d3c5",eco2:"#34e08a",rh:"#7aa7ff",temp:"#f5a524"};
+function draw(k){
+  const d=series[k], c=$("c_"+k), r=devicePixelRatio||1, w=c.clientWidth, h=c.clientHeight; c.width=w*r; c.height=h*r;
+  const g=c.getContext("2d"); g.scale(r,r); g.clearRect(0,0,w,h); if(d.length<2) return;
+  let lo=Math.min(...d), hi=Math.max(...d); if(hi-lo<1e-6) hi=lo+1; const pad=(hi-lo)*.15; lo-=pad; hi+=pad;
+  const path=()=>{ g.beginPath(); d.forEach((v,i)=>{ const x=i/(N-1)*w, y=h-(v-lo)/(hi-lo)*h; i?g.lineTo(x,y):g.moveTo(x,y); }); };
+  path(); g.lineTo((d.length-1)/(N-1)*w,h); g.lineTo(0,h); g.closePath(); const gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,COL[k]+"33"); gr.addColorStop(1,COL[k]+"00"); g.fillStyle=gr; g.fill();
+  path(); g.strokeStyle=COL[k]; g.lineWidth=1.8; g.stroke();
+}
+function drawAll(){ ["tvoc","eco2","rh","temp"].forEach(draw); }
+
+/* ---------- Bluetooth ---------- */
+function setStatus(on,txt){ $("status").classList.toggle("on",on); $("statusTxt").textContent=txt; $("btnTrig").disabled=!on; }
+$("btnConnect").onclick=async()=>{
+  if(!navigator.bluetooth){ alert("Bluetooth in the browser needs Chrome or Edge, opened from https or http://localhost."); return; }
+  try{
+    stopDemo();
+    device=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]});
+    device.addEventListener("gattserverdisconnected",()=>{ setStatus(false,"Disconnected"); resetRing("Idle","Connect the mask or start the demo"); });
+    const s=await (await device.gatt.connect()).getPrimaryService(SVC);
+    const tx=await s.getCharacteristic(TX); rxChar=await s.getCharacteristic(RX); await tx.startNotifications();
+    const dec=new TextDecoder(); tx.addEventListener("characteristicvaluechanged",e=>onChunk(dec.decode(e.target.value)));
+    setStatus(true,"Connected: "+device.name);
+  }catch(e){ console.error(e); setStatus(false,"Connection failed. Check the mask is on and try again."); }
+};
+const send=t=>rxChar&&rxChar.writeValue(new TextEncoder().encode(t));
+$("btnTrig").onclick=()=>{ if(demoTimer) startDemoExhale(); else send("TRIG"); };
+$("simClass").onchange=e=>{ if(rxChar) send("SIM"+e.target.value); };
+
+/* ---------- demo mode (same line protocol as the firmware) ---------- */
+let dt=0, phase="idle", dbuf=[]; const DB=[40,450,45,28];
+function startDemoExhale(){ if(phase==="idle"){ phase="exhale"; dt=0; dbuf=[]; } }
+function stopDemo(){ if(demoTimer){ clearInterval(demoTimer); demoTimer=null; phase="idle"; } }
+function startDemo(){
+  stopDemo(); setStatus(true,"Demo mode"); phase="idle";
+  demoTimer=setInterval(()=>{
+    const amp=$("simClass").value==="1"?1.4:1, nz=a=>a*(Math.random()*2-1); let k=0;
+    if(phase==="exhale"){ dt+=.1; k=(1-Math.exp(-dt/2))*(dt<8?1:Math.exp(-(dt-8)/2.5));
+      if(dt>10&&!dbuf.done) finishDemo(); if(dt>20) phase="idle"; }
+    const s=[40+300*amp*k+nz(5),450+900*amp*k+nz(10),45+35*k+nz(.5),28+5*k+nz(.1)];
+    if(phase==="exhale"&&dt<=10) dbuf.push(s);
+    const st=phase==="exhale"?(dt<=10?2:3):1;
+    parseLine(["L",Date.now(),s[0].toFixed(0),s[1].toFixed(0),s[2].toFixed(1),s[3].toFixed(1),st].join(","));
+  },100);
+}
+function finishDemo(){
+  dbuf.done=true; const n=dbuf.length, f=[];
+  for(let c=0;c<4;c++){ let pk=0,auc=0,sl=0,tp=0,pv=0;
+    dbuf.forEach((s,i)=>{ const d=s[c]-DB[c]; if(Math.abs(d)>Math.abs(pk)){pk=d;tp=i*.1;} auc+=d*.1; if(i){ const q=(d-pv)/.1; if(Math.abs(q)>Math.abs(sl)) sl=q; } pv=d; });
+    f.push(pk,auc,sl,tp); }
+  parseLine("F,"+f.map(v=>v.toFixed(3)).join(","));
+}
+$("btnDemo").onclick=()=>{ if(demoTimer){ stopDemo(); setStatus(false,"Not connected"); resetRing("Idle","Connect the mask or start the demo"); } else startDemo(); };
+$("btnWatch").onclick=()=>{ location.hash="#test"; startDemo(); setTimeout(startDemoExhale,1200); };
+
+/* ---------- export ---------- */
+$("btnCsv").onclick=()=>{
+  const real=history.filter(r=>r.src!=="demo");
+  if(!real.length){ alert("No real recordings yet. Demo samples are not exported."); return; }
+  const rows=[["subject_id","label","condition",...FEATS].join(",")];
+  real.forEach(r=>rows.push([r.subject,r.label,r.cond,...r.f].join(",")));
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([rows.join("\n")],{type:"text/csv"})); a.download="recordings.csv"; a.click();
+};
+$("btnPrint").onclick=()=>window.print();
+/*TRAIN-START*/
+const FEATS=["tvoc_peak","tvoc_auc","tvoc_slope","tvoc_tpeak","eco2_peak","eco2_auc","eco2_slope","eco2_tpeak","rh_peak","rh_auc","rh_slope","rh_tpeak","temp_peak","temp_auc","temp_slope","temp_tpeak"];
+function fitModel(F,y){
+  const n=F.length,d=F[0].length,m=new Array(d).fill(0),s=new Array(d).fill(0);
+  F.forEach(r=>r.forEach((v,j)=>m[j]+=v/n)); F.forEach(r=>r.forEach((v,j)=>s[j]+=(v-m[j])**2/n));
+  const sc=s.map(v=>Math.sqrt(v)||1), Z=F.map(r=>r.map((v,j)=>(v-m[j])/sc[j]));
+  const n1=y.reduce((a,b)=>a+b,0), n0=n-n1, w1=n/(2*n1), w0=n/(2*n0);
+  let w=new Array(d).fill(0), b=0;
+  for(let it=0;it<800;it++){
+    const gw=new Array(d).fill(0); let gb=0;
+    for(let i=0;i<n;i++){ let z=b; for(let j=0;j<d;j++) z+=w[j]*Z[i][j];
+      const e=(1/(1+Math.exp(-z))-y[i])*(y[i]?w1:w0); for(let j=0;j<d;j++) gw[j]+=e*Z[i][j]; gb+=e; }
+    for(let j=0;j<d;j++) w[j]-=0.1*(gw[j]/n+0.01*w[j]); b-=0.1*gb/n;
+  }
+  return {features:FEATS,mean:m,scale:sc,coef:w,intercept:b,bands:{low:.35,high:.65},synthetic:false};
+}
+function predictWith(M,x){ let z=M.intercept; for(let j=0;j<x.length;j++) z+=M.coef[j]*(x[j]-M.mean[j])/M.scale[j]; return 1/(1+Math.exp(-z)); }
+function aucOf(p,y){ const o=p.map((_,i)=>i).sort((a,b)=>p[a]-p[b]); let rs=0,n1=0; o.forEach((i,r)=>{ if(y[i]){ rs+=r+1; n1++; } }); const n0=p.length-n1; return n1&&n0?(rs-n1*(n1+1)/2)/(n1*n0):NaN; }
+function trainFromRows(rows){
+  const F=rows.map(r=>r.f), y=rows.map(r=>+r.label), n1=y.reduce((a,b)=>a+b,0), n0=y.length-n1;
+  if(n0<8||n1<8) return {err:"Need at least 8 real recordings of each type (you have "+n0+" reference and "+n1+" target)."};
+  const M=fitModel(F,y), subs=[...new Set(rows.map(r=>r.subject))]; let cv=null;
+  if(subs.length>=3){ const P=[],Y=[];
+    subs.forEach(s=>{ const tr=rows.filter(r=>r.subject!==s), te=rows.filter(r=>r.subject===s), ty=tr.map(r=>+r.label);
+      if(!ty.includes(0)||!ty.includes(1)) return; const m=fitModel(tr.map(r=>r.f),ty);
+      te.forEach(r=>{ P.push(predictWith(m,r.f)); Y.push(+r.label); }); });
+    if(P.length&&Y.includes(0)&&Y.includes(1)){ let tp=0,fn=0,tn=0,fp=0; P.forEach((p,i)=>{ if(Y[i]) p>=.5?tp++:fn++; else p>=.5?fp++:tn++; });
+      cv={auc:aucOf(P,Y),sens:tp/Math.max(tp+fn,1),spec:tn/Math.max(tn+fp,1)}; } }
+  return {M,n0,n1,subjects:subs.length,cv};
+}
+/*TRAIN-END*/
+$("btnTrain").onclick=()=>{
+  const out=trainFromRows(history.filter(r=>r.src!=="demo"));
+  if(out.err){ $("trainOut").textContent=out.err; return; }
+  model=out.M; showModel();
+  const cvTxt=out.cv?`Leave-one-subject-out: AUC ${out.cv.auc.toFixed(2)}, sensitivity ${(out.cv.sens*100).toFixed(0)}%, specificity ${(out.cv.spec*100).toFixed(0)}%.`
+    :"Not validated: record at least 3 different subject IDs to get an honest accuracy estimate.";
+  $("trainOut").textContent=`Model trained on your ${out.n0+out.n1} real recordings (${out.n0} reference, ${out.n1} target, ${out.subjects} subjects). ${cvTxt}`+(out.n0+out.n1<40?" Dataset is very small, so treat the score as a demonstration.":"");
+};
+$("btnSaveModel").onclick=()=>{ if(!model){ alert("No model yet."); return; } const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(model,null,1)],{type:"application/json"})); a.download="model.json"; a.click(); };
+$("csvIn").onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return; const L=(await f.text()).trim().split(/\r?\n/), hd=L[0].split(",");
+  const si=hd.indexOf("subject_id"), li=hd.indexOf("label"), ci=hd.indexOf("condition"), fi=FEATS.map(x=>hd.indexOf(x));
+  if(li<0||fi.includes(-1)){ alert("CSV needs columns: subject_id, label, condition and the 16 feature columns (use this page’s Export CSV)."); return; }
+  L.slice(1).forEach(l=>{ const c=l.split(","), x=fi.map(i=>+c[i]); if(x.some(isNaN)) return;
+    history.push({t:new Date(),f:x,p:model?infer(x):null,subject:c[si]||"imported",label:c[li],cond:c[ci]||"imported",src:"import"}); });
+  renderHist(); e.target.value="";
+};
+addEventListener("resize",drawAll);
+loadModel();
+</script>
+<script>
+/* ===================== BIOT 3D layer: hero ribbon (raw WebGL), tilt, scroll reveal ===================== */
+(function () {
+  const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const hero = document.getElementById('home'), cv = document.getElementById('gl');
+  let mx = .5, my = .5, sx = .5, sy = .5;
+
+  /* ---------- hero ribbon ---------- */
+  (function ribbon() {
+    if (!cv) return;
+    const gl = cv.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: true });
+    if (!gl) return;                                   // falls back to the CSS glow behind the text
+
+    const VS = `
+      attribute vec2 aUV; uniform mat4 uVP; uniform float uT,uPhase,uWidth,uScale; uniform vec3 uOff;
+      varying vec3 vN, vW;
+      vec3 centre(float s){
+        float x = mix(-9.5, 9.5, s);
+        float y = 1.9*sin(s*3.1+uPhase+uT*.22) + .55*sin(s*7.0+uT*.33+uPhase*2.0);
+        float z = 2.3*sin(s*2.4+uPhase*1.3+uT*.27);
+        return vec3(x,y,z);
+      }
+      vec3 pos(float s,float v){
+        vec3 c = centre(s);
+        vec3 T = normalize(centre(s+.003)-centre(s-.003));
+        vec3 B = normalize(cross(T,vec3(0.,1.,0.)));
+        vec3 N = cross(B,T);
+        float th = s*8.6 + uPhase*3.0 + uT*.38;                 // twist along the length
+        vec3 side = cos(th)*B + sin(th)*N;
+        float w = uWidth*(.78+.5*sin(s*4.6+uPhase+uT*.3));
+        float o = (v-.5)*2.0;
+        vec3 p = c + side*o*w + cross(side,T)*(1.0-o*o)*.28*w;  // lifted middle = glassy curvature
+        return p*uScale + uOff;
+      }
+      void main(){
+        float s=aUV.x, v=aUV.y;
+        vec3 p = pos(s,v);
+        vec3 ds = pos(s+.002,v)-pos(s-.002,v), dv = pos(s,v+.02)-pos(s,v-.02);
+        vN = normalize(cross(ds,dv)); vW = p;
+        gl_Position = uVP*vec4(p,1.0);
+      }`;
+    const FS = `
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
+      precision highp float;
+      #else
+      precision mediump float;
+      #endif
+      varying vec3 vN, vW; uniform vec3 uCam;
+      vec3 env(vec3 r){
+        vec3 c = vec3(.004,.010,.012);
+        c += vec3(.03,1.0,.80)*pow(max(dot(r,normalize(vec3(-.7,.4,.6))),0.),4.)*2.2;
+        c += vec3(.15,1.0,.5)*pow(max(dot(r,normalize(vec3(.8,-.4,.45))),0.),5.)*1.9;
+        c += vec3(1.0)*pow(max(dot(r,normalize(vec3(.1,.9,.45))),0.),16.)*3.6;
+        c += vec3(.8,1.0,.95)*pow(max(dot(r,normalize(vec3(-.3,-.3,.9))),0.),38.)*3.2;
+        float st = smoothstep(.90,.985,sin(r.x*6.5+r.y*2.0+1.0));
+        c += vec3(.6,1.0,.9)*st*.95*(.3+.7*(r.y*.5+.5));
+        float st2 = smoothstep(.93,.99,sin(r.y*9.0+r.z*3.0));
+        c += vec3(.2,.9,.8)*st2*.55;
+        return c;
+      }
+      void main(){
+        vec3 N = normalize(vN), V = normalize(uCam-vW);
+        if(dot(N,V)<0.) N = -N;
+        vec3 R = reflect(-V,N);
+        float f = pow(1.0-max(dot(N,V),0.),4.0);
+        vec3 c = env(R)*(.5+1.2*f) + vec3(.1,.7,.6)*f*.5;
+        c *= exp(-max(length(vW-uCam)-11.5,0.)*.11);          // depth fade
+        c = c/(1.0+c); c = pow(c,vec3(.88));
+        gl_FragColor = vec4(c,1.0);
+      }`;
+    function sh(t, src) { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(o)); return null; } return o; }
+    const vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS); if (!vs || !fs) return;
+    const pr = gl.createProgram(); gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr); hero.classList.add('gl-on');
+
+    const NU = 300, NV = 18, uv = [], idx = [];
+    for (let i = 0; i <= NU; i++) for (let j = 0; j <= NV; j++) uv.push(i / NU, j / NV);
+    for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) { const a = i * (NV + 1) + j, b = a + NV + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+    const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv), gl.STATIC_DRAW);
+    const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
+    const al = gl.getAttribLocation(pr, 'aUV'); gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
+    const U = n => gl.getUniformLocation(pr, n);
+    const uVP = U('uVP'), uT = U('uT'), uPh = U('uPhase'), uW = U('uWidth'), uS = U('uScale'), uO = U('uOff'), uC = U('uCam');
+    gl.enable(gl.DEPTH_TEST); gl.clearColor(0, 0, 0, 0);
+
+    const ribbons = [
+      { ph: 0.0, w: 1.00, s: 1.00, o: [0.0, -0.1, 0.0] },
+      { ph: 2.3, w: 0.65, s: 1.05, o: [0.0, 0.6, -1.4] },
+      { ph: 4.2, w: 0.42, s: 0.95, o: [0.3, -0.8, 0.9] }
+    ];
+    function mul(a, b) { const o = new Float32Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) { let v = 0; for (let k = 0; k < 4; k++) v += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = v; } return o; }
+    function persp(fov, a, n, f) { const t = 1 / Math.tan(fov / 2); return new Float32Array([t / a, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, 2 * f * n / (n - f), 0]); }
+    function look(e, t, u) {
+      let z = [e[0] - t[0], e[1] - t[1], e[2] - t[2]], l = Math.hypot(...z); z = z.map(v => v / l);
+      let x = [u[1] * z[2] - u[2] * z[1], u[2] * z[0] - u[0] * z[2], u[0] * z[1] - u[1] * z[0]]; l = Math.hypot(...x); x = x.map(v => v / l);
+      const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+      return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -(x[0] * e[0] + x[1] * e[1] + x[2] * e[2]), -(y[0] * e[0] + y[1] * e[1] + y[2] * e[2]), -(z[0] * e[0] + z[1] * e[1] + z[2] * e[2]), 1]);
+    }
+    let W = 0, H = 0, quality = 1;
+    function size() {
+      const dpr = Math.min(devicePixelRatio || 1, 1.75) * quality; W = hero.clientWidth; H = hero.clientHeight;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); gl.viewport(0, 0, cv.width, cv.height);
+    }
+    size(); new ResizeObserver(() => { size(); frame(performance.now()); }).observe(hero);
+
+    let t0 = performance.now(), running = true, visible = true;
+    function frame(now) {
+      const t = reduce ? 6 : (now - t0) / 1000;
+      sx += (mx - sx) * .05; sy += (my - sy) * .05;
+      const ry = (sx - .5) * .5, rx = (sy - .5) * .22 + Math.min(scrollY, 900) * .0005;
+      const D = 10.8, eye = [Math.sin(ry) * Math.cos(rx) * D, Math.sin(rx) * D * .8, Math.cos(ry) * Math.cos(rx) * D];
+      const aspect = W / H, vp = mul(persp(40 * Math.PI / 180, aspect, .5, 60), look(eye, [aspect < 1 ? 0 : 1.2, 0, 0], [0, 1, 0]));
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.uniformMatrix4fv(uVP, false, vp); gl.uniform3fv(uC, eye); gl.uniform1f(uT, t);
+      for (const r of ribbons) {
+        gl.uniform1f(uPh, r.ph); gl.uniform1f(uW, r.w); gl.uniform1f(uS, aspect < 1 ? r.s * .55 : r.s); gl.uniform3fv(uO, r.o);
+        gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
+      }
+    }
+    let last = 0, avg = 16, seen = 0;      // adaptive quality: never let the 3D scene slow the live dashboard
+    function loop(now) {
+      if (running && visible && !document.hidden) {
+        if (last) { avg = avg * .9 + Math.min(now - last, 200) * .1; seen++; }
+        last = now; frame(now);
+        if (seen > 30 && avg > 38) { seen = 0; avg = 16; if (quality > .5) { quality -= .25; size(); } else { running = false; } }
+      } else last = 0;
+      requestAnimationFrame(loop);
+    }
+    frame(performance.now()); if (!reduce) requestAnimationFrame(loop);
+    new IntersectionObserver(e => { visible = e[0].isIntersecting; }).observe(hero);   // pause when scrolled away
+    window.__biotGL = { frame };
+  })();
+
+  /* ---------- pointer parallax (3D scene + headline depth) ---------- */
+  if (hero && !reduce) {
+    hero.addEventListener('pointermove', e => {
+      const r = hero.getBoundingClientRect(); mx = (e.clientX - r.left) / r.width; my = (e.clientY - r.top) / r.height;
+      hero.style.setProperty('--px', ((mx - .5) * -14).toFixed(1) + 'px'); hero.style.setProperty('--py', ((my - .5) * -10).toFixed(1) + 'px');
+    });
+    hero.addEventListener('pointerleave', () => { mx = my = .5; hero.style.setProperty('--px', '0px'); hero.style.setProperty('--py', '0px'); });
+  }
+
+  /* ---------- 3D tilt on cards and panels ---------- */
+  if (matchMedia('(hover:hover) and (pointer:fine)').matches && !reduce) {
+    document.querySelectorAll('.feat div, .grid > .panel').forEach(el => {
+      const k = el.matches('.feat div') ? 8 : 2.6;
+      el.addEventListener('pointermove', e => {
+        const r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+        el.style.transform = 'perspective(1000px) rotateX(' + (-y * k).toFixed(2) + 'deg) rotateY(' + (x * k).toFixed(2) + 'deg)';
+      });
+      el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+    });
+  }
+
+  /* ---------- scroll reveal (rises and unfolds in 3D) ---------- */
+  const targets = document.querySelectorAll('section h2, section .lead, .feat div, .notice, #test .bar, .grid > .panel, #test > .panel, details');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); const t = e.target; setTimeout(() => { t.classList.remove('rv', 'in'); t.style.removeProperty('--d'); }, 1400); } }), { threshold: .12 });
+    targets.forEach(el => { el.classList.add('rv'); const sib = [...el.parentElement.children].indexOf(el); el.style.setProperty('--d', Math.min(sib, 5) * .08 + 's'); io.observe(el); });
+  }
+})();
+
+</script>
+</body>
+</html>

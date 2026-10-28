@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BIOT – Lung Risk Demo</title>
+<style>
+  :root { --text:#f2f6ff; --muted:#a9b9de; --card:rgba(18,48,112,.55); --line:rgba(150,185,255,.22);
+          --green:#34e0b4; --warn:#ffc04d; --red:#ff6b72; --cyan:#4cc9ff; color-scheme:dark; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; color:var(--text); font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+         background:radial-gradient(1200px 700px at 70% 10%,#1546b8 0,transparent 60%),linear-gradient(160deg,#0a2a7a,#071a52 70%); padding:28px 16px 48px; }
+  .wrap { max-width:640px; margin:0 auto; }
+  .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; font-size:14px; }
+  .top a { color:var(--muted); text-decoration:none; } .top a:hover { color:#fff; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:26px; backdrop-filter:blur(10px); box-shadow:0 20px 60px rgba(0,0,30,.35); }
+  .live { display:inline-flex; align-items:center; gap:8px; font-size:13px; font-weight:600; padding:6px 12px; border-radius:999px; background:rgba(76,201,255,.14); border:1px solid rgba(76,201,255,.4); }
+  .live i { width:8px; height:8px; border-radius:50%; background:#6b7fae; }
+  .live.on i { background:var(--cyan); box-shadow:0 0 10px var(--cyan); animation:p 1.4s infinite; }
+  @keyframes p { 50% { opacity:.35; } }
+  h1 { font-size:28px; margin:18px 0 6px; letter-spacing:-.02em; }
+  .sub { color:var(--muted); margin:0 0 22px; font-size:15px; }
+  h2 { font-size:17px; margin:0 0 10px; }
+  .badge { display:inline-block; padding:5px 14px; border-radius:999px; font-weight:700; font-size:14px; border:1px solid currentColor; }
+  .badge.low { color:var(--green); background:rgba(52,224,180,.12); } .badge.mod { color:var(--warn); background:rgba(255,192,77,.12); }
+  .badge.high { color:var(--red); background:rgba(255,107,114,.12); } .badge.none { color:var(--muted); }
+  .prob { font-size:64px; font-weight:800; letter-spacing:-.03em; line-height:1.1; margin:10px 0 2px; }
+  .prob small { font-size:20px; font-weight:600; color:var(--muted); letter-spacing:0; margin-left:6px; }
+  .meter { height:8px; border-radius:99px; margin:14px 0 6px; position:relative; background:linear-gradient(90deg,var(--green) 0 35%,var(--warn) 35% 65%,var(--red) 65% 100%); opacity:.9; }
+  .meter i { position:absolute; top:-5px; width:3px; height:18px; background:#fff; border-radius:2px; left:0; transition:left .5s; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px 24px; margin:22px 0; }
+  .grid dt { font-size:13px; color:var(--muted); } .grid dd { margin:2px 0 0; font-size:20px; font-weight:700; }
+  .grid dd small { font-size:13px; color:var(--muted); font-weight:500; }
+  .why { border-top:1px solid var(--line); padding-top:16px; margin-top:6px; }
+  .bar { display:flex; height:10px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.08); margin:8px 0; }
+  .bar b { display:block; transition:width .5s; } #bP { background:#7aa7ff; } #bS { background:var(--green); }
+  .leg { display:flex; gap:16px; font-size:12.5px; color:var(--muted); flex-wrap:wrap; }
+  .leg span::before { content:""; display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; background:currentColor; }
+  .l1 { color:#7aa7ff; } .l2 { color:var(--green); }
+  canvas { width:100%; height:70px; display:block; margin-top:12px; }
+  .ctl { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  button, select, input { font:inherit; color:var(--text); background:rgba(255,255,255,.07); border:1px solid var(--line); border-radius:12px; padding:10px 14px; }
+  button { cursor:pointer; font-weight:600; } button:hover { border-color:var(--cyan); } button.solid { background:#fff; color:#08205e; border-color:#fff; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .prof { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px; }
+  .prof label { font-size:13px; color:var(--muted); display:block; margin-bottom:4px; } .prof input, .prof select { width:100%; }
+  .note { font-size:13px; color:var(--muted); margin:18px 0 0; line-height:1.5; }
+  .msg { font-size:13px; color:var(--warn); min-height:18px; margin-top:12px; }
+  .prog { height:6px; border-radius:99px; background:rgba(255,255,255,.1); margin:12px 0 0; overflow:hidden; display:none; }
+  .prog b { display:block; height:100%; width:0; background:var(--cyan); transition:width .25s linear; }
+  @media (max-width:480px) { .prob { font-size:52px; } .card { padding:20px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="index.html">← BIOT home</a><span id="src" style="color:var(--muted)"></span></div>
+  <div class="card">
+    <span class="live" id="live"><i></i><span id="liveTxt">Not connected</span></span>
+    <h1>Lung Cancer Risk (Demo)</h1>
+    <p class="sub">Powered by breath sensors (ENS160 + BME280) and an experimental ML model trained on simulated data. Not for medical use.</p>
+
+    <h2>Predicted risk</h2>
+    <span class="badge none" id="badge">Waiting for data</span>
+    <div class="prog" id="progW"><b id="pg"></b></div>
+    <div class="prob" id="prob" aria-live="polite">–<small>% score</small></div>
+    <div class="meter"><i id="mk" style="display:none"></i></div>
+
+    <dl class="grid">
+      <div><dt>eCO₂ (ENS160)</dt><dd id="eco2">–</dd></div>
+      <div><dt>TVOC</dt><dd id="tvoc">–</dd></div>
+      <div><dt>Humidity</dt><dd id="rh">–</dd></div>
+      <div><dt>Temp</dt><dd id="temp">–</dd></div>
+      <div><dt>Age</dt><dd id="ageV">–</dd></div>
+      <div><dt>Smoking history</dt><dd id="smokeV">–</dd></div>
+    </dl>
+
+    <div class="why">
+      <h2 style="font-size:15px">What drives this score</h2>
+      <div class="bar"><b id="bP" style="width:50%"></b><b id="bS" style="width:50%"></b></div>
+      <div class="leg"><span class="l1">Age + smoking history</span><span class="l2">Breath sensors</span></div>
+      <canvas id="spark" aria-label="TVOC trend"></canvas>
+    </div>
+
+    <div class="prof">
+      <div><label for="age">Age</label><input id="age" type="number" min="10" max="100" value="55"></div>
+      <div><label for="smoke">Smoking history</label>
+        <select id="smoke"><option value="0">Never smoked</option><option value="1">Former smoker</option><option value="2" selected>Smoker</option></select></div>
+    </div>
+
+    <div class="ctl">
+      <button class="solid" id="bUsb">Connect via USB</button>
+      <button id="bBle">Connect via Bluetooth</button>
+      <button id="bDemo">Demo data</button>
+      <button class="solid" id="bStart" disabled>Start 2-min test</button>
+    </div>
+    <div class="msg" id="msg"></div>
+    <p class="note">Connect, let the ENS160 warm up for a few minutes, then press Start and breathe normally into the mask until the timer ends. This prototype visualises predictions from a machine-learning model trained on simulated data using low-cost air-quality sensors. It is not a diagnostic tool and must not be used for any medical decisions.</p>
+  </div>
+</div>
+
+<script>
+const SVC="6e400001-b5a3-f393-e0a9-e50e24dcca9e", TX="6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+const $=id=>document.getElementById(id), clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const SMOKE=["Never smoked","Former smoker","Smoker"];
+let cur=null, ema=null, trend=[], mode="none", port=null, reader=null, demoT=null, buf="", final=null, sess=null, sessT=null, bleDev=null;
+const DUR=120, SETTLE=10, MINN=60;   // test length (s) = 2-min average used in training; seconds ignored at start; min readings
+
+/* ---------- trained model (logistic regression on SIMULATED data; see model_sensors.json) ---------- */
+const M={"features":["age","former","current","ln_tvoc"],"mean":[54.825208333333336,0.23854166666666668,0.358125,6.202116284004614],"std":[11.872555448312873,0.4261919050504657,0.4794491468080802,0.722619713981284],"coef":[0.4933484550345643,0.19467042868553405,0.5412397365470207,0.6933724071883972],"intercept":-1.0397043978835516,"lo":[18,0,0,4.564348191467836],"hi":[85,1,1,8.006700845440367],"metrics":{"auc_profile":0.7068680892369559,"auc_tvoc":0.6809484975848441,"auc_both":0.7568352378342506},"warning":"Trained on SIMULATED data. Not validated. Not for medical use."};
+const sig=z=>1/(1+Math.exp(-z));
+/* inputs are clamped to the training range so the model never extrapolates (TVOC 1st-99th percentile of the training data) */
+function risk(v,age,smoke){
+  const x=[age,smoke==1?1:0,smoke==2?1:0,Math.log1p(v.tvoc)].map((xi,i)=>clamp(xi,M.lo[i],M.hi[i]));
+  let prof=M.intercept, sens=0;
+  x.forEach((xi,i)=>{ const t=M.coef[i]*(xi-M.mean[i])/M.std[i]; if(i<3) prof+=t; else sens+=t; });
+  return {p:sig(prof+sens), pProf:sig(prof)};
+}
+function bandOf(p){ return p<.35?["Low risk","low"]:p<.65?["Moderate risk","mod"]:["High risk","high"]; }
+
+function render(){
+  const age=clamp(+$("age").value||0,10,100), sm=+$("smoke").value;
+  $("ageV").textContent=age; $("smokeV").textContent=SMOKE[sm].replace(" smoked","").toLowerCase();
+  const v=final?final.v:ema; if(!v){ return; }
+  $("eco2").innerHTML=Math.round(v.eco2)+" <small>ppm</small>"; $("tvoc").innerHTML=Math.round(v.tvoc)+" <small>ppb</small>";
+  $("rh").innerHTML=v.rh.toFixed(1)+" <small>%</small>"; $("temp").innerHTML=v.temp.toFixed(1)+" <small>°C</small>";
+  if(!final){
+    if(!sess){ $("badge").textContent="Ready - press Start test"; $("badge").className="badge none"; }
+    $("prob").innerHTML="-<small>% score</small>"; $("mk").style.display="none"; spark(); return;
+  }
+  const r=risk(v,age,sm), [t,c]=bandOf(r.p);
+  $("badge").textContent=t; $("badge").className="badge "+c;
+  $("prob").innerHTML=(r.p*100).toFixed(1)+"<small>% score</small>";
+  $("mk").style.display="block"; $("mk").style.left="calc("+(r.p*100)+"% - 1px)";
+  const extra=Math.abs(r.p-r.pProf), tot=Math.max(r.p,r.pProf,1e-6);
+  $("bS").style.width=(extra/tot*100)+"%"; $("bP").style.width=(100-extra/tot*100)+"%";
+  spark();
+}
+function spark(){
+  const c=$("spark"), d=window.devicePixelRatio||1, w=c.clientWidth, h=c.clientHeight; c.width=w*d; c.height=h*d;
+  const g=c.getContext("2d"); g.scale(d,d); if(trend.length<2) return;
+  const lo=Math.min(...trend), hi=Math.max(...trend,lo+1);
+  g.beginPath(); trend.forEach((p,i)=>{ const x=i/119*w, y=h-4-(p-lo)/(hi-lo)*(h-8); i?g.lineTo(x,y):g.moveTo(x,y); });
+  g.strokeStyle="#4cc9ff"; g.lineWidth=2; g.stroke();
+}
+
+/* ---------- data in (firmware D line: D,ms,tvoc,eco2,rh,temp,state) ---------- */
+function onChunk(t){ buf+=t; let i; while((i=buf.indexOf("\n"))>=0){ const l=buf.slice(0,i).trim(); buf=buf.slice(i+1); parse(l); } }
+function parse(line){
+  if(line.startsWith("E,")){ $("msg").textContent=line.slice(2); return; }
+  if(!line.startsWith("D,")) return;
+  const p=line.split(","); if(p.length<7) return;
+  const v={tvoc:+p[2],eco2:+p[3],rh:+p[4],temp:+p[5]}; if(Object.values(v).some(isNaN)) return;
+  feed(v);
+}
+let lastRender=0;
+function feed(v){
+  const a=.1; ema=ema?{tvoc:ema.tvoc+a*(v.tvoc-ema.tvoc),eco2:ema.eco2+a*(v.eco2-ema.eco2),rh:ema.rh+a*(v.rh-ema.rh),temp:ema.temp+a*(v.temp-ema.temp)}:{...v};
+  const now=performance.now(); if(sess){ sess.s.push({t:now-sess.t0,...v}); trend.push(v.tvoc); if(trend.length>120) trend.shift(); }
+  if(now-lastRender>=1000||!lastRender){ lastRender=now; render(); }     // refresh the screen once per second
+}
+function setLive(on,txt){ $("bStart").disabled=!on||!!sess; $("live").classList.toggle("on",on); $("liveTxt").textContent=txt; }
+function stopStream(){
+  if(demoT){ clearInterval(demoT); demoT=null; }
+  if(reader){ try{ reader.cancel(); }catch(e){} reader=null; }
+  if(port){ setTimeout(()=>{ try{ port.close(); }catch(e){} port=null; },300); }
+  if(bleDev&&bleDev.gatt.connected){ try{ bleDev.gatt.disconnect(); }catch(e){} } bleDev=null;
+}
+function stopAll(){
+  stopStream(); clearInterval(sessT); sess=null; final=null; $("progW").style.display="none";
+  ema=null; trend=[]; buf=""; lastRender=0;
+}
+
+/* USB (Web Serial): the ESP32 already prints every line on Serial at 115200 */
+$("bUsb").onclick=async()=>{
+  if(!navigator.serial){ $("msg").textContent="USB needs Chrome or Edge on a laptop. Close the Arduino Serial Monitor first."; return; }
+  try{
+    stopAll(); await new Promise(r=>setTimeout(r,400));
+    port=await navigator.serial.requestPort(); await port.open({baudRate:115200});
+    setLive(true,"Live data streaming from ESP32"); $("src").textContent="USB serial"; $("msg").textContent="";
+    const dec=new TextDecoderStream(); port.readable.pipeTo(dec.writable).catch(()=>{}); reader=dec.readable.getReader();
+    for(;;){ const {value,done}=await reader.read(); if(done) break; onChunk(value); }
+  }catch(e){ console.error(e); setLive(false,"Not connected"); $("msg").textContent="Could not open the port. Close the Arduino Serial Monitor and try again."; }
+};
+/* Bluetooth */
+$("bBle").onclick=async()=>{
+  if(!navigator.bluetooth){ $("msg").textContent="Bluetooth needs Chrome or Edge."; return; }
+  try{
+    stopAll();
+    const dev=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}]}); bleDev=dev;
+    dev.addEventListener("gattserverdisconnected",()=>{ if(!final) setLive(false,"Disconnected"); });
+    const s=await (await dev.gatt.connect()).getPrimaryService(SVC), tx=await s.getCharacteristic(TX); await tx.startNotifications();
+    const dec=new TextDecoder(); tx.addEventListener("characteristicvaluechanged",e=>onChunk(dec.decode(e.target.value)));
+    setLive(true,"Live data streaming from ESP32 (Bluetooth)"); $("src").textContent="Bluetooth"; $("msg").textContent="";
+  }catch(e){ console.error(e); setLive(false,"Not connected"); $("msg").textContent="Bluetooth connection failed."; }
+};
+/* Demo data: behaves like a worn mask in a room. Calm breathing (~4.5 s cycle) lifts humidity and temperature a little,
+   the ENS160 channels lag behind with a slow low-pass (they really update ~1 Hz), and everything drifts gently.
+   One value per second, small integer jitter, so the screen is steady and readable. */
+$("bDemo").onclick=()=>{
+  stopAll(); setLive(true,"Demo data (simulated)"); $("src").textContent="Simulated"; $("msg").textContent="";
+  let t=0, n=0, tv=88, ec=655, rh=57, tp=29.4;               // start already settled
+  demoT=setInterval(()=>{
+    t+=.1; n++;
+    const br=Math.pow(Math.max(0,Math.sin(t*2*Math.PI/4.5)),2);          // 0..1 exhale pulse
+    const slow=Math.sin(t/14)+.6*Math.sin(t/5.3+1);                       // slow room/skin drift
+    const tTv=90+9*slow+22*br, tEc=660+24*slow+85*br, tRh=57+1.6*slow+6.5*br, tTp=29.4+.25*slow+.9*br;
+    tv+=(tTv-tv)*.012; ec+=(tEc-ec)*.012; rh+=(tRh-rh)*.12; tp+=(tTp-tp)*.04;  // sensor response lag
+    if(n%10===0) feed({tvoc:Math.round(tv+(Math.random()-.5)*3), eco2:Math.round(ec+(Math.random()-.5)*6),
+                       rh:Math.round((rh+(Math.random()-.5)*.3)*10)/10, temp:Math.round((tp+(Math.random()-.5)*.1)*10)/10});
+  },100);
+};
+/* ---------- timed test: collect DUR s, stop the sensors, compute ONE final score ---------- */
+$("bStart").onclick=()=>{
+  final=null; trend=[]; sess={t0:performance.now(),s:[]};
+  $("bStart").disabled=true; $("progW").style.display="block"; $("pg").style.width="0";
+  $("prob").innerHTML="-<small>% score</small>"; $("mk").style.display="none";
+  $("badge").className="badge none"; $("msg").textContent="Breathe normally into the mask until the timer ends.";
+  clearInterval(sessT); sessT=setInterval(tick,250); tick();
+};
+function tick(){
+  if(!sess) return;
+  const el=(performance.now()-sess.t0)/1000;
+  $("pg").style.width=Math.min(el/DUR*100,100)+"%";
+  $("badge").textContent="Measuring... "+Math.max(0,Math.ceil(DUR-el))+" s";
+  if(el>=DUR) finish();
+}
+function finish(){
+  clearInterval(sessT);
+  const all=sess.s, s=all.filter(x=>x.t>=SETTLE*1000); sess=null;
+  if(s.length<MINN){ stopStream(); setLive(false,"Test failed"); $("progW").style.display="none";
+    $("msg").textContent="Not enough valid readings ("+s.length+" of "+MINN+" needed). Check the connection and try again."; render(); return; }
+  const m=k=>s.reduce((a,x)=>a+x[k],0)/s.length;
+  const base=all.slice(0,5).reduce((a,x)=>a+x.rh,0)/Math.min(5,all.length), rise=Math.max(...s.map(x=>x.rh))-base;
+  final={v:{tvoc:m("tvoc"),eco2:m("eco2"),rh:m("rh"),temp:m("temp")}, n:s.length};
+  stopStream(); setLive(false,"Test complete - sensors stopped");
+  $("msg").textContent=(rise<3?"Weak breath signal (humidity rose only "+rise.toFixed(1)+" points) - result may be unreliable. ":"")+
+    "Final score from "+s.length+" readings. Reconnect to run another test.";
+  render();
+}
+$("age").oninput=$("smoke").onchange=render;
+addEventListener("resize",spark); render();
+// test hook for automated checks
+window.__biot={parse,render,risk};
+</script>
+</body>
+</html>
