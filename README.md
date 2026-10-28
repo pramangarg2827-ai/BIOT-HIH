@@ -1,11 +1,11 @@
-BIOT — Breathe Analysis Redefined
+# BIOT — Breathe Analysis Redefined
 Team Echo Echo | HackInHills
 
 BIOT is a proposed IoT-enabled smart-mask system designed to explore non-invasive breath analysis through gas-sensor measurements and machine-learning-based pattern recognition. The project aims to investigate whether patterns in volatile organic compounds (VOCs) and other breath-related biomarkers can support future respiratory health screening research.
 
 Project status: Experimental prototype. Cancer detection is a research objective, not a clinically validated capability.
 
-**Table of Contents**
+## **Table of Contents**
 1.Overview
 2.Problem Statement
 3.Proposed Solution
@@ -21,7 +21,7 @@ Project status: Experimental prototype. Cancer detection is a research objective
 13.Limitations and Safety
 
 
-Overview
+## Overview
 Cancer remains a major global health challenge, and access to timely screening can be limited by cost, infrastructure, and the need for specialized clinical investigations.
 
 Research into breath-based biomarkers has explored how volatile organic compounds and other chemical characteristics of exhaled breath may be associated with certain diseases.
@@ -36,14 +36,14 @@ The project brings together three core areas:
 
 **Healthcare Technology**: A wearable concept for non-invasive respiratory monitoring research.
 
-**Problem Statement**
+## **Problem Statement**
 Conventional cancer screening may require specialized equipment, clinical facilities, laboratory testing, and professional interpretation. These requirements can create accessibility challenges, particularly in underserved and remote communities.
 
 Breath analysis is an active research area because exhaled breath contains chemical compounds that may reflect physiological processes. However, developing a reliable breath-based screening system requires appropriate sensors, calibrated measurements, representative clinical datasets, and rigorous validation.
 
 BIOT explores a potential approach to this challenge by combining breath-related sensor measurements with machine learning in a portable, wearable system concept.
 
-**Proposed Solution**
+## **Proposed Solution**
 BIOT proposes a smart mask architecture that integrates gas-sensing hardware with an embedded processing unit and an AI-based analysis pipeline.
 
 The intended system workflow is:
@@ -58,7 +58,7 @@ The intended system workflow is:
 
 **Future connectivity**:  A dedicated, validated nitric oxide sensor (Alphasense NO-B4), historical monitoring, and clinician-supervised review.
 
-**System Architecture**
+## **System Architecture**
 The proposed system consists of the following layers.
 
 **1. Sensing Layer**
@@ -76,7 +76,7 @@ A planned dashboard or connected application can display sensor readings, model 
 **5. Data and Validation Layer**
 Supports dataset management, performance evaluation, and future research using independently collected and appropriately labelled measurements.
 
-**Hardware Components**
+# **Hardware Components**
 Component	Intended role
 ESP32	Microcontroller for sensor acquisition and wireless connectivity
 BME280	Temperature, humidity, and atmospheric pressure sensing
@@ -85,7 +85,7 @@ VOC sensor module	Gas-related measurements for experimental analysis
 **Dedicated NO sensor**	Potential future measurement of nitric oxide, subject to hardware selection
 USB power supply	Power during development and debugging
 
-**Software Components**
+# **Software Components**
 
 **1.Machine Learning Model**: Trained on breath sample datasets to recognize cancer-specific VOC and NO patterns. Uses algorithms such as Support Vector Machines (SVM),Convolutional Neural Networks (CNN), or Random Forest classifiers for accurate predictions.
 
@@ -93,8 +93,8 @@ USB power supply	Power during development and debugging
 
 **3.Cloud Storage**: Optional feature for storing anonymized user data to improve model accuracy through continuous learning.
 
-Dataset
-The current development workflow uses a synthetic breath-sensor dataset named synthetic_breath_sensors_v2.csv.
+## **Dataset**
+The current development workflow uses a synthetic breath-sensor dataset named synthetic_breath_sensors_v3.csv.
 
 The dataset includes the following fields:
 age
@@ -116,7 +116,7 @@ Results from this dataset must not be interpreted as clinical diagnostic accurac
 
 Future development requires appropriately documented breath measurements and independently verified clinical labels, with suitable permissions and privacy safeguards.
 
-**Workflow**
+## **Workflow**
 The intended development workflow is:
 
 Acquire or load sensor data.
@@ -127,9 +127,9 @@ Evaluate predictions on held-out data.
 Save the trained model.
 Integrate sensor acquisition and model inference into the application as the relevant components become available.
 
-**Installation and Setup**
+## **Installation and Setup**
 
-**Prerequisites**
+### **Prerequisites**
 
 1.Python 3.10 or a compatible version
 2.pip
@@ -137,12 +137,12 @@ Integrate sensor acquisition and model inference into the application as the rel
 4.The project's source files and dataset
 5.Google Colab or a local Python environment
 
-**1. Clone the repository**
+1. Clone the repository
 
 git clone https://github.com/pramangarg2827-ai/BIOT-Smart-Breath-Analysis.git
 cd BIOT-Smart-Breath-Analysis
 
-**2. Create a virtual environment**
+2. Create a virtual environment
 
 python -m venv venv
 Activate it on Windows:
@@ -151,13 +151,14 @@ venv\Scripts\activate
 On macOS or Linux:
 source venv/bin/activate
 
-**3. Install dependencies**
+3. Install dependencies
 
 If a requirements.txt file is included:
 pip install -r requirements.txt
 Otherwise, install the packages used by the ML pipeline:
 
 pip install pandas numpy scikit-learn matplotlib seaborn joblib
+
 4. Prepare the dataset
 Place the dataset in the location expected by your training script. Update the CSV path if necessary.
 
@@ -175,7 +176,7 @@ The application and hardware commands should be adjusted to match the implemente
 
 After the setup is complete.
 
-**Step-by-Step Instructions for Use**
+# **Step-by-Step Instructions for Use**
 1. Inhale deeply and exhale naturally into the mask. The sensors will collect the breath sample and measure the concentration of VOCs and
 NO levels.Repeat this process 3-5 times for the AI to gather sufficient data for analysis.
 
