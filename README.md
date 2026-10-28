@@ -139,7 +139,7 @@ Integrate sensor acquisition and model inference into the application as the rel
 
 1. Clone the repository
 
-git clone https://github.com/pramangarg2827-ai/BIOT-Smart-Breath-Analysis.git
+git clone https://github.com/pramangarg2827-ai/BIOT-HIH.git
 cd BIOT-Smart-Breath-Analysis
 
 2. Create a virtual environment
